@@ -1,0 +1,999 @@
+#define POT 2 //La definicion de donde se encuentra el pushbutton y el potenciometro en el puerto analogo
+#define PSHB 3
+int a0 = 10, a1 = 11, a2 = 12, a3 = 13, b0 = 6, b1 = 7, b2 = 8, b3 = 9;//Definicion de donde se encuentran las variables en los puertos digitales
+int m = A1, cin = A0;
+int s0 = 2, s1 = 3, s2 = 4, s3 = 5;
+int stateS, statem = 0;//Variables para el control de las salidas hacia la ALU 74LS181
+int valor, valorS, valorM=0, valorC=0, flag;
+void setup() {
+  // put your setup code here, to run once:
+
+  Serial.begin(9600);
+  // Pines en modo salida
+  pinMode(a0, OUTPUT);
+  pinMode(a1, OUTPUT);
+  pinMode(a2, OUTPUT);
+  pinMode(a3, OUTPUT);
+  pinMode(b0, OUTPUT);
+  pinMode(b1, OUTPUT);
+  pinMode(b2, OUTPUT);
+  pinMode(b3, OUTPUT);
+  pinMode(s0, OUTPUT);
+  pinMode(s1, OUTPUT);
+  pinMode(s2, OUTPUT);
+  pinMode(s3, OUTPUT);
+  pinMode(m, OUTPUT);
+  pinMode(cin, OUTPUT);
+}
+
+void loop() {
+  /*La seleccion del modo que se desea utilizar debe realizarse despues de selecciónar la operación que debe de realizar
+  la ALU, esta operación se realiza moviendo la perilla del potenciometro y verificando el valor en decimal de la operación
+  despues se selecciona el valor de m para la funcion logica con el numero 1 y con numero 0 para la función aritmetica y acontinuacion si
+  se eligio la opción aritmetica se escribe se tiene que seleccionar el valor de Cn si se seleccióno el valor 1 para M no importa el valor que tome
+  Cn puede poner tanto como 1 */
+  analogWrite(cin, valorC);
+  analogWrite(m, valorM);
+  
+  //Estos switch cargan el valor que tendran la "S" para seleccionar la operación que se desea
+  //Para mas detalles de las operaciones que se utilizan consultar la hoja de datos
+  switch (stateS) {
+    case 0:
+      digitalWrite(s0, LOW);
+      digitalWrite(s1, LOW);
+      digitalWrite(s2, LOW);
+      digitalWrite(s3, LOW);
+      break;
+    case 1:
+      digitalWrite(s0, HIGH);
+      digitalWrite(s1, LOW);
+      digitalWrite(s2, LOW);
+      digitalWrite(s3, LOW);
+      break;
+    case 2:
+      digitalWrite(s0, LOW);
+      digitalWrite(s1, HIGH);
+      digitalWrite(s2, LOW);
+      digitalWrite(s3, LOW);
+      break;
+    case 3:
+      digitalWrite(s0, HIGH);
+      digitalWrite(s1, HIGH);
+      digitalWrite(s2, LOW);
+      digitalWrite(s3, LOW);
+      break;
+    case 4:
+      digitalWrite(s0, LOW);
+      digitalWrite(s1, LOW);
+      digitalWrite(s2, HIGH);
+      digitalWrite(s3, LOW);
+      break;
+    case 5:
+      digitalWrite(s0, HIGH);
+      digitalWrite(s1, LOW);
+      digitalWrite(s2, HIGH);
+      digitalWrite(s3, LOW);
+      break;
+    case 6:
+      digitalWrite(s0, LOW);
+      digitalWrite(s1, HIGH);
+      digitalWrite(s2, HIGH);
+      digitalWrite(s3, LOW);
+      break;
+    case 7:
+      digitalWrite(s0, HIGH);
+      digitalWrite(s1, HIGH);
+      digitalWrite(s2, HIGH);
+      digitalWrite(s3, LOW);
+      break;
+    case 8:
+      digitalWrite(s0, LOW);
+      digitalWrite(s1, LOW);
+      digitalWrite(s2, LOW);
+      digitalWrite(s3, HIGH);
+      break;
+    case 9:
+      digitalWrite(s0, HIGH);
+      digitalWrite(s1, LOW);
+      digitalWrite(s2, LOW);
+      digitalWrite(s3, HIGH);
+      break;
+    case 10:
+      digitalWrite(s0, LOW);
+      digitalWrite(s1, HIGH);
+      digitalWrite(s2, LOW);
+      digitalWrite(s3, HIGH);
+      break;
+    case 11:
+      digitalWrite(s0, HIGH);
+      digitalWrite(s1, HIGH);
+      digitalWrite(s2, LOW);
+      digitalWrite(s3, HIGH);
+      break;
+    case 12:
+      digitalWrite(s0, LOW);
+      digitalWrite(s1, LOW);
+      digitalWrite(s2, HIGH);
+      digitalWrite(s3, HIGH);
+      break;
+    case 13:
+      digitalWrite(s0, HIGH);
+      digitalWrite(s1, LOW);
+      digitalWrite(s2, HIGH);
+      digitalWrite(s3, HIGH);
+      break;
+    case 14:
+      digitalWrite(s0, LOW);
+      digitalWrite(s1, HIGH);
+      digitalWrite(s2, HIGH);
+      digitalWrite(s3, HIGH);
+      break;
+    case 15:
+      digitalWrite(s0, HIGH);
+      digitalWrite(s1, HIGH);
+      digitalWrite(s2, HIGH);
+      digitalWrite(s3, HIGH);
+      break;
+  }
+  /*El numero que se desea para A y para B se debe cambiar aqui y se debe escribir bit por bit
+  siendo a0 o b0 los menos significativos y a3 y b3 los mas significativos*/
+  //A
+  digitalWrite(a0, HIGH);
+  digitalWrite(a1, LOW);
+  digitalWrite(a2, HIGH);
+  digitalWrite(a3, LOW);
+  //B
+  digitalWrite(b0, HIGH);
+  digitalWrite(b1, HIGH);
+  digitalWrite(b2, LOW);
+  digitalWrite(b3, LOW);
+  /*para utilizar la operación que se desea seleccionar se debe girar la perilla  del potenciometro
+  Las operaciones estan enumeradas de 0 a 15 estas varian dependiendo del valor que se le asigno al inicio
+  del loop, una vez que se escoja la variable que se desea, se presiona el boton a lado del potenciometro y se mostrara
+  el resultado por medio de los leds, para ver que operacion se esta seleccionando el numero se aprecia en el monitor serial*/
+  //El formato de esta funcion se repite 16 veces para cada uno de las 16 operaciones diferentes para cada valor de M y Cn
+  valor = analogRead(POT);
+  Serial.print("el valor de S es: ");
+  if (valor < 59) {
+    Serial.println("0");
+    if(analogRead(A3) >= 500){
+      //Una vez se presiona el boton se tiene que realizar un delay para que no se a la siguiente acción de manera rápida
+      Serial.println("Se presiono el boton 0");
+      delay(5000);
+      stateS = 0;
+      flag = 1;
+      //Mientras no se escoja un valor para M se va a repetir hasta que se presione el boton
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    //Una vez que sale del valor M se vuelve a activar la bandera en 1 pero ahora para que se escoja el valor Cn
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    
+      delay(1000);
+    }
+
+    //Estas acciones se repiten 16 veces más
+  } else if (valor < 118 && valor > 59) {
+    Serial.println("1");
+    if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 1");
+      delay(5000);
+      stateS = 1;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  } else if (valor < 177 && valor > 118) {
+    Serial.println("2");
+    if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 2");
+      delay(5000);
+      stateS = 2;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  } else if (valor < 236 && valor > 177) {
+    Serial.println("3");
+    if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 3");
+      delay(5000);
+      stateS = 3;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  } else if (valor < 295 && valor > 236) {
+    Serial.println("4");
+    if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 4");
+      delay(5000);
+      stateS = 4;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  } else if (valor < 354 && valor > 295) {
+    Serial.println("5");
+    if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 5");
+      delay(5000);
+      stateS = 5;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  } else if (valor < 413 && valor > 354) {
+    Serial.println("6");
+    if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton6");
+      delay(5000);
+      stateS = 6;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  } else if (valor < 472 && valor > 413) {
+    Serial.println("7");
+    if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 7");
+      delay(5000);
+      stateS = 7;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  } else if (valor < 531 && valor > 472) {
+    Serial.println("8");
+    if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 8");
+      delay(5000);
+      stateS = 8;
+    }
+  } else if (valor < 590 && valor > 531) {
+    Serial.println("9");
+    if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 9");
+      delay(5000);
+      stateS = 9;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  } else if (valor < 649 && valor > 590) {
+    Serial.println("10");
+    if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 10");
+      delay(5000);
+      stateS = 10;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  } else if (valor < 708 && valor > 649) {
+    Serial.println("11");
+    if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 11");
+      delay(5000);
+      stateS = 11;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  } else if (valor < 767 && valor > 708) {
+    Serial.println("12");
+      if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 12");
+      delay(5000);
+      stateS = 12; 
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    } 
+    }
+  } else if (valor < 826 && valor > 708) {
+      Serial.println("13");
+      if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 13");
+      delay(5000);
+      stateS = 13;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  } else if (valor < 885 && valor > 826) {
+      Serial.println("14");
+      if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 14");
+      delay(5000);
+      
+      stateS = 14;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  } else if ( valor > 885) {
+      Serial.println("15");
+      if(analogRead(A3) >= 500){
+      Serial.println("Se presiono el boton 15");
+      delay(5000);
+      stateS = 15;
+      flag = 1;
+      while(flag){
+      Serial.print("El valor de m es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M0");
+          valorM = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          delay(5000);
+          Serial.println("Se presiono el boton M1");
+          valorM = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+
+    flag=1;
+
+    while(flag){
+      Serial.print("El valor de C es: ");
+      valor = analogRead(POT);
+      if(valor < 475){
+        Serial.println("0");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C0");
+          delay(5000);
+          valorC = 0;
+          flag = 0;
+        } 
+      }else if(valor >= 475){
+        Serial.println("1");
+        if(analogRead(A3) >= 500){
+          Serial.println("Se presiono el boton C1");
+          delay(5000);
+          valorC = 255;
+          flag = 0;
+        } 
+      }
+      delay(1000);
+    }
+    }
+  }
+  //Una vez se termina regresara al inicio del loop para volver a repetir las acciones
+  delay(1000);
+}
